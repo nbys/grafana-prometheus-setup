@@ -1,0 +1,87 @@
+services:
+  postgres-1:
+    image: postgres:latest
+    container_name: postgres-1
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  postgres-2:
+    image: postgres:latest
+    container_name: postgres-2
+    volumes:
+      - postgres_data2:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+
+
+  # Postres Exporter for one postgres instance
+  # postgres_exporter:
+  #   image: prometheuscommunity/postgres-exporter:latest
+  #   container_name: postgres_exporter
+  #   environment:
+  #     DATA_SOURCE_URI: "postgres-1:5432/postgres?sslmode=disable"
+  #     DATA_SOURCE_USER: postgres
+  #     DATA_SOURCE_PASS: postgres
+  #   volumes:
+  #     - ./postgres_exporter.yml:/etc/postgres_exporter/postgres_exporter.yml
+  #   ports:
+  #     - "9187:9187"
+  #   command: ["--config.file", "/etc/postgres_exporter/postgres_exporter.yml"]
+  #   restart: unless-stopped
+  
+  # Postres Exporter for multi targets postgres instances
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_exporter
+    volumes:
+      - ./postgres_exporter.yml:/etc/postgres_exporter/postgres_exporter.yml
+    ports:
+      - "9187:9187"
+    command: ["--config.file", "/etc/postgres_exporter/postgres_exporter.yml"]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - postgres_exporter
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Set Grafana admin password
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards 
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  postgres_data:
+  postgres_data2:
+
