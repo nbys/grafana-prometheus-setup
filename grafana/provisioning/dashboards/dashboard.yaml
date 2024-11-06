@@ -6,5 +6,5 @@ providers:
     folder: ''
     type: file
     options:
-      path: /etc/grafana/provisioning/dashboards/9628_rev7.json
+      path: /etc/grafana/provisioning/dashboards/9628_rev7_adjusted.json
 
